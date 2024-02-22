@@ -3,24 +3,13 @@ from bs4 import BeautifulSoup
 import json
 from urllib.parse import urlparse, urljoin
 import sys
-base_url = f"http://{sys.argv[1]}"
-domain_name = urlparse(base_url).netloc
 
-visited_urls = set()
-unique_titles = set()  # Benzersiz başlıkları saklamak için bir set
-unique_paragraphs = set()  # Benzersiz paragrafları saklamak için bir set
-unique_images = set()  # Benzersiz resimleri saklamak için bir set
 
-data = {
-    "links": [],
-    "titles": [],
-    "paragraphs": [],
-    "images": [],
-    "meta": {},
-    "social_media": {},
-    "forms": [],
-    "videos": []
-}
+def save_data(data):
+    """Toplanan verileri JSON dosyasına kaydeder."""
+    with open("scraped_data.json", "w", encoding='utf-8') as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+    print("Veriler başarıyla kaydedildi.")
 
 def scrape_url(url):
     if url in visited_urls or urlparse(url).netloc != domain_name:
@@ -87,14 +76,30 @@ def scrape_url(url):
                     scrape_url(full_url)
     except Exception as e:
         print(f"Error scraping {url}: {e}")
-        with open("scraped_data.json", "w", encoding='utf-8') as file:
-            json.dump(data, file, indent=4, ensure_ascii=False)
-            
-        exit()
+        
+if __name__ == "__main__":
+    base_url = f"http://{sys.argv[1]}"
+    domain_name = urlparse(base_url).netloc
 
-scrape_url(base_url)
+    visited_urls = set()
+    unique_titles = set()  # Benzersiz başlıkları saklamak için bir set
+    unique_paragraphs = set()  # Benzersiz paragrafları saklamak için bir set
+    unique_images = set()  # Benzersiz resimleri saklamak için bir set
 
-with open("scraped_data.json", "w", encoding='utf-8') as file:
-    json.dump(data, file, indent=4, ensure_ascii=False)
+    data = {
+        "links": [],
+        "titles": [],
+        "paragraphs": [],
+        "images": [],
+        "meta": {},
+        "social_media": {},
+        "forms": [],
+        "videos": []
+    }
 
-print("Scraping tamamlandı, veriler scraped_data.json dosyasına kaydedildi.")
+    try:
+        scrape_url(base_url)
+    except Exception as e:
+        print(f"Genel hata oluştu: {e}")
+    finally:
+        save_data(data)  # Program sonlandırılmadan önce verileri kaydet
