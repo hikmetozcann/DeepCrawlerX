@@ -1,0 +1,7 @@
+{
+    "user_agent": "DeepCrawlerX/0.1",
+    "request_delay": 1,
+    "max_retries": 3,
+    "timeout_seconds": 5
+  }
+  
