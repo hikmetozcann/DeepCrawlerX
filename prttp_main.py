@@ -74,6 +74,7 @@ def scrape_url(url):
                 if full_url not in visited_urls:
                     data["links"].append(full_url)
                     scrape_url(full_url)
+                    
     except Exception as e:
         print(f"Error scraping {url}: {e}")
         
@@ -82,9 +83,9 @@ if __name__ == "__main__":
     domain_name = urlparse(base_url).netloc
 
     visited_urls = set()
-    unique_titles = set()  # Benzersiz başlıkları saklamak için bir set
-    unique_paragraphs = set()  # Benzersiz paragrafları saklamak için bir set
-    unique_images = set()  # Benzersiz resimleri saklamak için bir set
+    unique_titles = set()  
+    unique_paragraphs = set()  
+    unique_images = set()  
 
     data = {
         "links": [],
