@@ -1,13 +1,35 @@
 import requests
+import time
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
 from data_manager import save_data
 
 class DeepCrawler:
-    def __init__(self, base_url):
+    def __init__(self, base_url, config=None):
         self.base_url = base_url
         self.domain_name = urlparse(base_url).netloc
         self.visited_urls = set()
+        self.data = []
+
+        cfg = config or {}
+        self.headers = {"User-Agent": cfg.get("user_agent", "DeepCrawlerX/0.1")}
+        self.request_delay = cfg.get("request_delay", 0)
+        self.max_retries = cfg.get("max_retries", 3)
+        self.timeout = cfg.get("timeout_seconds", 5)
+
+    def fetch(self, url):
+        last_error = None
+        for _ in range(self.max_retries):
+            try:
+                response = requests.get(url, headers=self.headers, timeout=self.timeout)
+                if response.status_code == 200:
+                    return response.content
+            except Exception as e:
+                last_error = e
+            time.sleep(self.request_delay)
+        if last_error:
+            print(f"Error fetching {url}: {last_error}")
+        return None
 
     def scrape_url(self, url):
         if url in self.visited_urls or urlparse(url).netloc != self.domain_name:
@@ -15,19 +37,16 @@ class DeepCrawler:
         print(f"Scraping {url}")
         self.visited_urls.add(url)
 
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
-                self.process_page(url, soup)
-                links = [urljoin(url, link.get('href')) for link in soup.find_all('a', href=True)]
-                for link in links:
-                    if urlparse(link).netloc == self.domain_name and link not in self.visited_urls:
-                        self.scrape_url(link)
-            else:
-                print(f"Failed to retrieve {url}")
-        except Exception as e:
-            print(f"Error scraping {url}: {e}")
+        content = self.fetch(url)
+        if content is None:
+            return
+
+        soup = BeautifulSoup(content, "html.parser")
+        self.process_page(url, soup)
+        links = [urljoin(url, link.get("href")) for link in soup.find_all("a", href=True)]
+        for link in links:
+            if urlparse(link).netloc == self.domain_name and link not in self.visited_urls:
+                self.scrape_url(link)
 
     def process_page(self, url, soup):
         """Çekilen sayfanın içeriğini işler ve toplanan verileri kaydeder."""
@@ -77,11 +96,9 @@ class DeepCrawler:
             'links': list(links)
         }
         
-        # Toplanan verileri kaydet
-        self.save_data(page_data)
+        self.data.append(page_data)
 
 
     def save_data(self):
-        # Tüm tarama işlemi tamamlandığında, toplanan verileri kaydetmek için kullanılır.
-        # Örneğin, tüm bağlantıları veya sayfa başlıklarını bir JSON dosyasına kaydedebilirsiniz.
-        save_data(self.visited_urls)
+        """Toplanan sayfa verilerini dosyaya kaydeder."""
+        save_data(self.data)
